@@ -46,17 +46,25 @@ module.exports = async function handler(req, res) {
                 body: JSON.stringify({
                     model: "llama-3.1-8b-instant",
                     messages: [
-                        { role: "system", content: "Kamu pakar siber. WAJIB balas HANYA dengan format: STATUS|Alasan. STATUS hanya boleh diisi kata 'BAHAYA' atau 'AMAN'." },
+                        { role: "system", content: "Kamu pakar siber. WAJIB balas HANYA dengan format: STATUS|Alasan. STATUS hanya boleh 'BAHAYA' atau 'AMAN'." },
                         { role: "user", content: teks }
                     ],
                     temperature: 0.1
                 })
             });
             
+            // SOLUSI JSON ERROR: Cek apakah Groq sedang error (Kode 500/400)
+            if (!groqResponse.ok) {
+                throw new Error("Koneksi ke AI Groq terputus atau ditolak.");
+            }
+
             const data = await groqResponse.json();
-            const aiAnswer = data.choices[0].message.content;
             
-            // PERBAIKAN LOGIKA: Hanya baca kata sebelum garis '|'
+            if (!data.choices || data.choices.length === 0) {
+                 throw new Error("AI gagal memberikan respon.");
+            }
+
+            const aiAnswer = data.choices[0].message.content;
             const parts = aiAnswer.split('|');
             const status = parts[0].trim().toUpperCase();
             
@@ -68,26 +76,11 @@ module.exports = async function handler(req, res) {
             
             pesanHasil = parts.length > 1 ? parts[1].trim() : aiAnswer.replace(/BAHAYA|AMAN/gi, '').trim();
         }
-            
-            // Memaksa deteksi kata kunci jika AI lupa format "|"
-            if (textBesar.includes("BAHAYA") || textBesar.includes("PENIPUAN") || textBesar.includes("PHISHING") || textBesar.includes("MALWARE")) {
-                isBahaya = true;
-            } else {
-                isBahaya = false;
-            }
-            
-            // Bersihkan tulisan BAHAYA/AMAN dari pesan yang akan dibaca pengguna
-            const parts = aiAnswer.split('|');
-            if (parts.length > 1) {
-                pesanHasil = parts[1].trim();
-            } else {
-                pesanHasil = aiAnswer.replace(/BAHAYA|AMAN|STATUS:/gi, '').trim();
-            }
-        }
 
         return res.status(200).json({ isBahaya, pesanHasil });
 
     } catch (error) {
+        // Mencegah server mengirim HTML, paksa selalu kirim JSON error
         return res.status(500).json({ error: error.message });
     }
 };
