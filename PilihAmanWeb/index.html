@@ -167,24 +167,24 @@ const btnBayarQris = document.getElementById('btnBayarQris');
 const btnLogout = document.getElementById('btnLogout'); 
 
 // =======================================================
-// [PERBAIKAN BUG 2] VARIABEL SISTEM (LOCAL STORAGE)
+// 2. VARIABEL SISTEM (LOCAL STORAGE)
 // =======================================================
-// Cek memori browser, jika belum ada, beri 10. Jika ada, gunakan sisa yang tersimpan.
+// Mengambil ingatan sisa kuota, default 10 jika belum pernah scan
 let sisaKuota = localStorage.getItem('kuotaPilihAman');
 if (sisaKuota === null) {
     sisaKuota = 10;
 } else {
     sisaKuota = parseInt(sisaKuota);
 }
-// Tampilkan ke layar saat pertama kali buka
+// Tampilkan ke layar saat halaman pertama kali dimuat
 if (kuotaText) kuotaText.innerText = `${sisaKuota} / 10`;
 
 // =======================================================
-// 2. INISIALISASI FIREBASE & SISTEM LOGIN
+// 3. INISIALISASI FIREBASE & SISTEM LOGIN
 // =======================================================
-// PASTE FIREBASE CONFIG ANDA DI SINI
+// --- PASTE FIREBASE CONFIG ANDA DI SINI ---
 const firebaseConfig = {
-    apiKey: "AIzaSyDWJMeI-74WX5-pzjXh64No9MCg_8W1PFQ",
+   apiKey: "AIzaSyDWJMeI-74WX5-pzjXh64No9MCg_8W1PFQ",
   authDomain: "pilihaman-31d79.firebaseapp.com",
   projectId: "pilihaman-31d79",
   storageBucket: "pilihaman-31d79.firebasestorage.app",
@@ -196,7 +196,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// Pemantau Status Login
+// Pemantau Status Login (Berjalan otomatis)
 auth.onAuthStateChanged((user) => {
     if (user) {
         if(btnLoginGoogle) btnLoginGoogle.classList.add('hidden');
@@ -220,8 +220,7 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// [PERBAIKAN BUG 1] Aksi Tombol Login Menggunakan REDIRECT (Bukan Pop-Up)
-// Aksi Tombol Login (Kembali ke metode Pop-up yang lebih stabil)
+// Aksi Tombol Login (Mode Redirect Anti-Blokir Browser)
 if (btnLoginGoogle) {
     btnLoginGoogle.addEventListener('click', () => {
         btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Mengalihkan...';
@@ -229,14 +228,14 @@ if (btnLoginGoogle) {
     });
 }
 
-// Aksi Tombol Log Out (Solusi Menunggu Firebase Selesai)
+// Aksi Tombol Log Out (Mode Tunggu / Async)
 if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
         if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
             try {
                 btnLogout.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                await auth.signOut(); // Tunggu sampai benar-benar keluar
-                window.location.href = "/"; // Muat ulang dari awal dengan bersih
+                await auth.signOut(); // Tunggu sampai koneksi Firebase benar-benar putus
+                window.location.href = "/"; // Muat ulang ke beranda dalam kondisi bersih
             } catch (error) {
                 alert("Gagal Log Out: " + error.message);
             }
@@ -244,23 +243,14 @@ if (btnLogout) {
     });
 }
 
-// Aksi Tombol Log Out
-if (btnLogout) {
-    btnLogout.addEventListener('click', () => {
-        const konfirmasi = confirm("Apakah Anda yakin ingin keluar?");
-        if (konfirmasi) {
-            auth.signOut().then(() => { window.location.reload(); });
-        }
-    });
-}
-
 // =======================================================
-// 3. KENDALI MODAL PRO (DAFTAR TUNGGU)
+// 4. KENDALI MODAL PRO (DAFTAR TUNGGU)
 // =======================================================
 function bukaModalPro() {
     proModal.classList.remove('hidden');
     setTimeout(() => { proCard.classList.replace('scale-95', 'scale-100'); }, 10);
 }
+
 if (btnProHeader) btnProHeader.addEventListener('click', bukaModalPro);
 if (btnClosePro) {
     btnClosePro.addEventListener('click', () => {
@@ -285,10 +275,31 @@ if (btnBayarQris) {
 }
 
 // =======================================================
-// 4. LOGIKA UTAMA PEMINDAIAN (TERHUBUNG KE SERVER VERCEL)
+// 5. LOGIKA UTAMA PEMINDAIAN (TERHUBUNG KE SERVER VERCEL)
 // =======================================================
 if (btnScan) {
     btnScan.addEventListener('click', async () => {
+        const teks = inputTeks.value.trim(); 
+
+        if (teks === "") {
+            alert("Tolong masukkan teks atau link terlebih dahulu!");
+            return;
+        }
+
+        if (sisaKuota <= 0) {
+            bukaModalPro(); 
+            return;
+        }
+
+        btnScan.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> MEMERIKSA DATABASE...';
+        btnScan.classList.replace('bg-blue-600', 'bg-slate-400');
+        btnScan.disabled = true;
+
+        // Kurangi dan Simpan Kuota ke Memori Browser
+        sisaKuota--;
+        localStorage.setItem('kuotaPilihAman', sisaKuota);
+        kuotaText.innerText = `${sisaKuota} / 10`;
+
         try {
             const response = await fetch('/api/scan', {
                 method: 'POST',
@@ -296,12 +307,12 @@ if (btnScan) {
                 body: JSON.stringify({ teks: teks })
             });
 
-            // SOLUSI JSON ERROR: Ambil data sebagai teks mentah terlebih dahulu
+            // Pengereman Anti-Tersedak (Validasi JSON)
             const textResponse = await response.text();
             let data;
             
             try {
-                data = JSON.parse(textResponse); // Coba ubah ke JSON
+                data = JSON.parse(textResponse); 
             } catch (jsonError) {
                 console.error("Respon bukan JSON:", textResponse);
                 throw new Error("Server AI sedang sibuk atau mengalami gangguan teknis.");
@@ -332,18 +343,21 @@ if (btnScan) {
             resultMessage.innerText = `Masalah: ${error.message}`; 
         }
 
+        // Kembalikan Tombol ke Semula
         btnScan.innerHTML = '<i class="fa-solid fa-radar text-xl"></i> CEK SEKARANG';
         btnScan.classList.replace('bg-slate-400', 'bg-blue-600');
         btnScan.disabled = false;
 
+        // Buka Pop-up Hasil
         resultModal.classList.remove('hidden');
         setTimeout(() => {
             document.getElementById('resultCard').classList.replace('scale-95', 'scale-100');
         }, 10);
+    });
 }
 
 // =======================================================
-// 5. MENUTUP MODAL HASIL SCAN
+// 6. MENUTUP MODAL HASIL SCAN
 // =======================================================
 if (btnCloseModal) {
     btnCloseModal.addEventListener('click', () => {
