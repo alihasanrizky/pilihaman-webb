@@ -172,10 +172,21 @@
         });
 
         // Tombol Login (Redirect)
+        // Tombol Login (Pop-up Diperkuat)
         if (btnLoginGoogle) {
-            btnLoginGoogle.addEventListener('click', () => {
-                btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Mengalihkan...';
-                auth.signInWithRedirect(provider);
+            btnLoginGoogle.addEventListener('click', async () => {
+                const teksAsli = btnLoginGoogle.innerHTML;
+                btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Membuka Google...';
+                
+                try {
+                    await auth.signInWithPopup(provider);
+                    // Jika sukses, pemantau AuthState akan otomatis mengubah tampilan
+                } catch (error) {
+                    console.error("Login Error:", error);
+                    // Jika gagal/diblokir, hentikan loading dan kembalikan tombol
+                    btnLoginGoogle.innerHTML = teksAsli;
+                    alert("Login dibatalkan atau diblokir oleh browser. Pastikan Anda mengizinkan jendela Pop-up.");
+                }
             });
         }
 
@@ -259,15 +270,17 @@
                         throw new Error("Server AI sedang sibuk. Silakan coba lagi.");
                     }
 
-                    if (!response.ok) {
-                        throw new Error(data.error || "Gagal memproses di server");
-                    }
-
-                    if (data.isBahaya) {
+                    // TAMPILKAN HASIL DARI SERVER KE LAYAR (3 WARNA)
+                    if (data.status === "BAHAYA") {
                         resultHeader.className = "p-6 text-center bg-red-600 text-white";
                         resultIcon.className = "fa-solid fa-triangle-exclamation text-6xl mb-4 animate-bounce";
                         resultTitle.innerText = "BAHAYA TERDETEKSI!";
                         resultMessage.innerHTML = `${data.pesanHasil} <br><br><span class='text-red-600 font-bold uppercase'>JANGAN DIKLIK ATAU DIBALAS!</span>`;
+                    } else if (data.status === "WASPADA") {
+                        resultHeader.className = "p-6 text-center bg-amber-500 text-white";
+                        resultIcon.className = "fa-solid fa-circle-exclamation text-6xl mb-4 animate-pulse";
+                        resultTitle.innerText = "PERINGATAN / WASPADA";
+                        resultMessage.innerHTML = `${data.pesanHasil} <br><br><span class='text-amber-600 font-bold'>Tautan atau pesan ini mencurigakan. Harap berhati-hati.</span>`;
                     } else {
                         resultHeader.className = "p-6 text-center bg-green-500 text-white";
                         resultIcon.className = "fa-solid fa-shield-check text-6xl mb-4";
