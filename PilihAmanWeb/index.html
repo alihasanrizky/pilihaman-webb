@@ -164,23 +164,32 @@ const btnClosePro = document.getElementById('btnClosePro');
 const proCard = document.getElementById('proCard');
 const btnLoginGoogle = document.getElementById('btnLoginGoogle');
 const btnBayarQris = document.getElementById('btnBayarQris');
-const btnLogout = document.getElementById('btnLogout'); // Tombol Log Out baru
+const btnLogout = document.getElementById('btnLogout'); 
 
-// VARIABEL SISTEM
-let sisaKuota = 10; 
+// =======================================================
+// [PERBAIKAN BUG 2] VARIABEL SISTEM (LOCAL STORAGE)
+// =======================================================
+// Cek memori browser, jika belum ada, beri 10. Jika ada, gunakan sisa yang tersimpan.
+let sisaKuota = localStorage.getItem('kuotaPilihAman');
+if (sisaKuota === null) {
+    sisaKuota = 10;
+} else {
+    sisaKuota = parseInt(sisaKuota);
+}
+// Tampilkan ke layar saat pertama kali buka
+if (kuotaText) kuotaText.innerText = `${sisaKuota} / 10`;
 
 // =======================================================
 // 2. INISIALISASI FIREBASE & SISTEM LOGIN
 // =======================================================
 // PASTE FIREBASE CONFIG ANDA DI SINI
 const firebaseConfig = {
-    apiKey: "AIzaSyDWJMeI-74WX5-pzjXh64No9MCg_8W1PFQ",
-  authDomain: "pilihaman-31d79.firebaseapp.com",
-  projectId: "pilihaman-31d79",
-  storageBucket: "pilihaman-31d79.firebasestorage.app",
-  messagingSenderId: "1086896192246",
-  appId: "1:1086896192246:web:3759499850410195aa8ad7"
-
+    apiKey: "PASTE_API_KEY_FIREBASE_ANDA",
+    authDomain: "PASTE_AUTH_DOMAIN_ANDA",
+    projectId: "PASTE_PROJECT_ID_ANDA",
+    storageBucket: "PASTE_STORAGE_BUCKET_ANDA",
+    messagingSenderId: "PASTE_MESSAGING_SENDER_ID_ANDA",
+    appId: "PASTE_APP_ID_ANDA"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -190,11 +199,9 @@ const provider = new firebase.auth.GoogleAuthProvider();
 // Pemantau Status Login
 auth.onAuthStateChanged((user) => {
     if (user) {
-        // JIKA SUDAH LOGIN
         if(btnLoginGoogle) btnLoginGoogle.classList.add('hidden');
         if(btnBayarQris) btnBayarQris.classList.remove('hidden');
         if(btnLogout) btnLogout.classList.remove('hidden'); 
-        
         if(btnProHeader) {
             const namaDepan = user.displayName.split(' ')[0];
             btnProHeader.innerHTML = `<img src="${user.photoURL}" class="w-6 h-6 rounded-full border border-white/50 shadow-sm"> Hai, ${namaDepan}`;
@@ -202,11 +209,9 @@ auth.onAuthStateChanged((user) => {
             btnProHeader.classList.replace('to-amber-500', 'to-blue-600');
         }
     } else {
-        // JIKA BELUM LOGIN / LOGOUT
         if(btnLoginGoogle) btnLoginGoogle.classList.remove('hidden');
         if(btnBayarQris) btnBayarQris.classList.add('hidden');
         if(btnLogout) btnLogout.classList.add('hidden'); 
-        
         if(btnProHeader) {
             btnProHeader.innerHTML = `<i class="fa-solid fa-crown"></i> PRO`;
             btnProHeader.classList.replace('from-blue-500', 'from-amber-400');
@@ -215,30 +220,25 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-// Aksi Tombol Login
+// [PERBAIKAN BUG 1] Aksi Tombol Login Menggunakan REDIRECT (Bukan Pop-Up)
 if (btnLoginGoogle) {
     btnLoginGoogle.addEventListener('click', () => {
-        const teksAsli = btnLoginGoogle.innerHTML;
-        btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Membuka Google...';
-        
-        auth.signInWithPopup(provider).catch((error) => {
-            console.error("Gagal Login:", error);
-            alert("Terjadi kesalahan saat login: " + error.message);
-            btnLoginGoogle.innerHTML = teksAsli;
-        });
+        btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Mengalihkan...';
+        auth.signInWithRedirect(provider);
     });
 }
+
+// Menangkap error jika Redirect gagal
+auth.getRedirectResult().catch((error) => {
+    alert("Gagal login dengan Google: " + error.message);
+});
 
 // Aksi Tombol Log Out
 if (btnLogout) {
     btnLogout.addEventListener('click', () => {
         const konfirmasi = confirm("Apakah Anda yakin ingin keluar?");
         if (konfirmasi) {
-            auth.signOut().then(() => {
-                window.location.reload(); 
-            }).catch((error) => {
-                alert("Gagal Log Out: " + error.message);
-            });
+            auth.signOut().then(() => { window.location.reload(); });
         }
     });
 }
@@ -248,13 +248,9 @@ if (btnLogout) {
 // =======================================================
 function bukaModalPro() {
     proModal.classList.remove('hidden');
-    setTimeout(() => {
-        proCard.classList.replace('scale-95', 'scale-100');
-    }, 10);
+    setTimeout(() => { proCard.classList.replace('scale-95', 'scale-100'); }, 10);
 }
-
 if (btnProHeader) btnProHeader.addEventListener('click', bukaModalPro);
-
 if (btnClosePro) {
     btnClosePro.addEventListener('click', () => {
         proCard.classList.replace('scale-100', 'scale-95');
@@ -262,20 +258,16 @@ if (btnClosePro) {
     });
 }
 
-// Tombol Gabung Daftar Tunggu (Pengganti Bayar QRIS sementara)
 if (btnBayarQris) {
     btnBayarQris.innerHTML = '<i class="fa-solid fa-envelope-open-text text-xl text-amber-400"></i> GABUNG DAFTAR TUNGGU PRO';
-    
     btnBayarQris.addEventListener('click', () => {
         const actionArea = document.getElementById('proActionArea');
         const userEmail = auth.currentUser ? auth.currentUser.email : "Pengguna";
-        
         actionArea.innerHTML = `
             <div class="text-center animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-200">
                 <i class="fa-solid fa-clock-rotate-left text-4xl text-amber-500 mb-3"></i>
                 <h4 class="font-bold text-slate-800 mb-2">Versi PRO Sedang Disiapkan!</h4>
-                <p class="text-sm text-slate-600 mb-0">Terima kasih atas antusiasme Anda. Kami telah mencatat email <strong>${userEmail}</strong>.</p>
-                <p class="text-xs text-slate-500 mt-2">Kami akan mengirimkan email saat PilihAman PRO sudah bisa digunakan.</p>
+                <p class="text-sm text-slate-600 mb-0">Terima kasih. Kami telah mencatat email <strong>${userEmail}</strong>.</p>
             </div>
         `;
     });
@@ -298,16 +290,16 @@ if (btnScan) {
             return;
         }
 
-        const teksAsliTombol = btnScan.innerHTML;
         btnScan.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> MEMERIKSA DATABASE...';
         btnScan.classList.replace('bg-blue-600', 'bg-slate-400');
         btnScan.disabled = true;
 
+        // [PERBAIKAN BUG 2] Kurangi dan Simpan Kuota ke Memori Browser
         sisaKuota--;
+        localStorage.setItem('kuotaPilihAman', sisaKuota);
         kuotaText.innerText = `${sisaKuota} / 10`;
 
         try {
-            // MENGHUBUNGI DAPUR RAHASIA (BACKEND) VERCEL KITA
             const response = await fetch('/api/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -316,11 +308,8 @@ if (btnScan) {
 
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || "Gagal memproses di server");
-            }
+            if (!response.ok) throw new Error(data.error || "Gagal memproses di server");
 
-            // TAMPILKAN HASIL DARI SERVER KE LAYAR
             if (data.isBahaya) {
                 resultHeader.className = "p-6 text-center bg-red-600 text-white";
                 resultIcon.className = "fa-solid fa-triangle-exclamation text-6xl mb-4 animate-bounce";
@@ -332,13 +321,11 @@ if (btnScan) {
                 resultTitle.innerText = "STATUS AMAN";
                 resultMessage.innerText = data.pesanHasil;
             }
-
         } catch (error) {
-            console.error("Detail Error:", error);
             resultHeader.className = "p-6 text-center bg-slate-600 text-white";
             resultIcon.className = "fa-solid fa-bug text-6xl mb-4";
             resultTitle.innerText = "ERROR SISTEM";
-            resultMessage.innerText = `Terjadi masalah koneksi ke server. Detail Masalah: ${error.message}`; 
+            resultMessage.innerText = `Terjadi masalah koneksi ke server. Detail: ${error.message}`; 
         }
 
         btnScan.innerHTML = '<i class="fa-solid fa-radar text-xl"></i> CEK SEKARANG';
@@ -346,9 +333,7 @@ if (btnScan) {
         btnScan.disabled = false;
 
         resultModal.classList.remove('hidden');
-        setTimeout(() => {
-            document.getElementById('resultCard').classList.replace('scale-95', 'scale-100');
-        }, 10);
+        setTimeout(() => { document.getElementById('resultCard').classList.replace('scale-95', 'scale-100'); }, 10);
     });
 }
 
@@ -364,7 +349,6 @@ if (btnCloseModal) {
         }, 300);
     });
 }
-
     </script>
 </body>
 </html>
