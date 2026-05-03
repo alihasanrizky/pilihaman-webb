@@ -3,139 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PilihAman</title>
-
-    <!-- Firebase -->
+    <title>PilihAman - Deteksi Penipuan & Phishing</title>
+    
+    <!-- Memanggil Tailwind CSS untuk Desain -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memanggil Ikon FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Memanggil Firebase Authentication -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
 
-<body class="bg-slate-50">
+    <!-- HEADER / NAVIGASI -->
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-blue-600 text-2xl"></i>
+                <h1 class="font-black text-xl tracking-tight text-slate-800">Pilih<span class="text-blue-600">Aman</span></h1>
+            </div>
+            <div class="flex items-center">
+                <!-- Tombol PRO / Profil -->
+                <button id="btnProHeader" class="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-md transition flex items-center gap-2">
+                    <i class="fa-solid fa-crown"></i> PRO
+                </button>
+                <!-- Tombol Log Out (Sembunyi by default) -->
+                <button id="btnLogout" class="hidden ml-3 text-sm text-red-500 font-bold hover:text-red-700 transition" title="Keluar dari Akun">
+                    <i class="fa-solid fa-power-off text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
 
-<div class="max-w-md mx-auto p-4">
+    <!-- KONTEN UTAMA -->
+    <main class="max-w-3xl mx-auto px-4 py-10 text-center">
+        <h2 class="text-3xl md:text-4xl font-extrabold mb-4 text-slate-800">Cek Pesan Penipuan & Link Phishing</h2>
+        <p class="text-slate-600 mb-8 max-w-xl mx-auto">Tempelkan pesan WhatsApp, SMS, atau tautan yang mencurigakan di bawah ini. AI kami akan memindainya dalam hitungan detik.</p>
 
-    <!-- HEADER -->
-    <div class="flex justify-between items-center mb-4">
-        <h1 class="font-bold text-xl">PilihAman</h1>
-        <div class="flex gap-2">
-            <button id="btnLogout" class="hidden text-red-500 text-sm">Logout</button>
-            <button id="btnProHeader" class="bg-amber-400 px-3 py-1 rounded">PRO</button>
+        <div class="bg-white p-2 rounded-2xl shadow-lg border border-slate-100 mb-4 relative">
+            <textarea id="inputTeks" rows="5" class="w-full p-4 rounded-xl border-0 focus:ring-0 resize-none text-slate-700 placeholder-slate-400 text-lg" placeholder="Tempel teks atau link di sini..."></textarea>
+            
+            <div class="flex justify-between items-center p-2 border-t border-slate-50 mt-2">
+                <div class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">
+                    Sisa Kuota Harian: <span class="text-blue-600 font-bold">10 / 10</span>
+                </div>
+                <button id="btnScan" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-blue-200 flex items-center gap-2">
+                    <i class="fa-solid fa-radar text-xl"></i> CEK SEKARANG
+                </button>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400"><i class="fa-solid fa-lock text-slate-300"></i> Didukung oleh Google Safe Browsing & AI Llama 3.1</p>
+    </main>
+
+    <!-- MODAL HASIL SCAN (Tersembunyi) -->
+    <div id="resultModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+        <div id="resultCard" class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300">
+            <!-- Header Modal akan diubah warnanya oleh JS (Merah/Hijau) -->
+            <div id="resultHeader" class="p-6 text-center bg-slate-600 text-white">
+                <i id="resultIcon" class="fa-solid fa-shield text-6xl mb-4"></i>
+                <h3 id="resultTitle" class="text-2xl font-black tracking-wide">MEMPROSES...</h3>
+            </div>
+            <div class="p-6 text-center">
+                <p id="resultMessage" class="text-slate-700 text-lg leading-relaxed mb-6">Mohon tunggu sebentar...</p>
+                <button id="btnCloseModal" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition">TUTUP</button>
+            </div>
         </div>
     </div>
 
-    <!-- INPUT -->
-    <textarea id="inputTeks" class="w-full border p-3 rounded h-32"></textarea>
-
-    <!-- KUOTA -->
-    <div class="text-sm mt-2">
-        Kuota: <span id="kuotaText">10 / 10</span>
+    <!-- MODAL PAYWALL / PRO (Tersembunyi) -->
+    <div id="proModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+        <div id="proCard" class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 relative">
+            <button id="btnClosePro" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div class="p-6 text-center bg-gradient-to-br from-amber-50 to-orange-50 border-b border-amber-100">
+                <i class="fa-solid fa-crown text-5xl text-amber-500 mb-3"></i>
+                <h3 class="text-2xl font-black text-slate-800">PilihAman PRO</h3>
+                <p class="text-slate-600 text-sm mt-2">Dapatkan akses pemindaian tanpa batas dan lindungi keluarga Anda dari penipuan setiap hari.</p>
+            </div>
+            
+            <div class="p-6" id="proActionArea">
+                <div class="space-y-3 mb-6">
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-check-circle text-green-500"></i><span class="text-sm font-medium">Scan Teks & Link Tanpa Batas</span></div>
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-check-circle text-green-500"></i><span class="text-sm font-medium">Prioritas Server AI Anti-Lemot</span></div>
+                </div>
+                
+                <!-- Tombol Login Google -->
+                <button id="btnLoginGoogle" class="w-full bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-xl transition flex items-center justify-center gap-3 shadow-sm mb-3">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" class="w-5 h-5" alt="Google"> Lanjutkan dengan Google
+                </button>
+                
+                <!-- Tombol Daftar Tunggu (Hanya muncul jika sudah login) -->
+                <button id="btnBayarQris" class="hidden w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-lg mb-2">
+                    <i class="fa-solid fa-envelope-open-text text-xl text-amber-400"></i> GABUNG DAFTAR TUNGGU PRO
+                </button>
+                <p class="text-center text-xs text-slate-400 mt-3"><i class="fa-solid fa-lock"></i> Aman dan Terenkripsi</p>
+            </div>
+        </div>
     </div>
 
-    <!-- BUTTON -->
-    <button id="btnScan" class="w-full bg-blue-600 text-white mt-4 py-3 rounded">
-        CEK SEKARANG
-    </button>
+    <!-- ========================================== -->
+    <!-- LOGIKA JAVASCRIPT APLIKASI -->
+    <!-- ========================================== -->
+    <script>
+        const btnScan = document.getElementById('btnScan');
+        const inputTeks = document.getElementById('inputTeks');
+        const resultModal = document.getElementById('resultModal');
+        const btnCloseModal = document.getElementById('btnCloseModal');
+        const resultHeader = document.getElementById('resultHeader');
+        const resultIcon = document.getElementById('resultIcon');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultMessage = document.getElementById('resultMessage');
+        const kuotaText = document.querySelector('.text-blue-600.font-bold');
 
-</div>
+        const btnProHeader = document.getElementById('btnProHeader');
+        const proModal = document.getElementById('proModal');
+        const btnClosePro = document.getElementById('btnClosePro');
+        const proCard = document.getElementById('proCard');
+        const btnLoginGoogle = document.getElementById('btnLoginGoogle');
+        const btnBayarQris = document.getElementById('btnBayarQris');
+        const btnLogout = document.getElementById('btnLogout'); 
 
-<script>
-// ============================
-// INIT
-// ============================
-const btnScan = document.getElementById('btnScan');
-const inputTeks = document.getElementById('inputTeks');
-const kuotaText = document.getElementById('kuotaText');
-const btnLogout = document.getElementById('btnLogout');
+        // 1. MANAJEMEN KUOTA (LOCAL STORAGE)
+        let sisaKuota = localStorage.getItem('kuotaPilihAman');
+        if (sisaKuota === null) {
+            sisaKuota = 10;
+        } else {
+            sisaKuota = parseInt(sisaKuota);
+        }
+        if (kuotaText) kuotaText.innerText = `${sisaKuota} / 10`;
 
-// ============================
-// KUOTA SYSTEM
-// ============================
-let sisaKuota = parseInt(localStorage.getItem('kuota') || "10");
-kuotaText.innerText = `${sisaKuota} / 10`;
+        // 2. INISIALISASI FIREBASE
+        // --- PASTE FIREBASE CONFIG ANDA DI SINI ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWJMeI-74WX5-pzjXh64No9MCg_8W1PFQ",
+            authDomain: "pilihaman-31d79.firebaseapp.com",
+            projectId: "pilihaman-31d79",
+            storageBucket: "pilihaman-31d79.firebasestorage.app",
+            messagingSenderId: "1086896192246",
+            appId: "1:1086896192246:web:3759499850410195aa8ad7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const provider = new firebase.auth.GoogleAuthProvider();
 
-// ============================
-// FIREBASE
-// ============================
-const firebaseConfig = {
-  apiKey: "AIzaSyDWJMeI-74WX5-pzjXh64No9MCg_8W1PFQ",
-  authDomain: "pilihaman-31d79.firebaseapp.com",
-  projectId: "pilihaman-31d79",
-  storageBucket: "pilihaman-31d79.firebasestorage.app",
-  messagingSenderId: "1086896192246",
-  appId: "1:1086896192246:web:3759499850410195aa8ad7"
-};
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const provider = new firebase.auth.GoogleAuthProvider();
-
-// LOGIN STATE
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        btnLogout.classList.remove('hidden');
-    } else {
-        btnLogout.classList.add('hidden');
-    }
-});
-
-// LOGOUT
-btnLogout.onclick = async () => {
-    await auth.signOut();
-    location.reload();
-};
-
-// ============================
-// SCAN LOGIC
-// ============================
-btnScan.addEventListener('click', async () => {
-
-    const teks = inputTeks.value.trim();
-
-    if (!teks) {
-        alert("Isi dulu!");
-        return;
-    }
-
-    if (sisaKuota <= 0) {
-        alert("Kuota habis!");
-        return;
-    }
-
-    btnScan.innerText = "Loading...";
-    btnScan.disabled = true;
-
-    try {
-        const res = await fetch('/api/scan', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ teks })
+        // Pemantau Status Login
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                if(btnLoginGoogle) btnLoginGoogle.classList.add('hidden');
+                if(btnBayarQris) btnBayarQris.classList.remove('hidden');
+                if(btnLogout) btnLogout.classList.remove('hidden'); 
+                if(btnProHeader) {
+                    const namaDepan = user.displayName.split(' ')[0];
+                    btnProHeader.innerHTML = `<img src="${user.photoURL}" class="w-6 h-6 rounded-full border border-white/50 shadow-sm"> Hai, ${namaDepan}`;
+                    btnProHeader.classList.replace('from-amber-400', 'from-blue-500');
+                    btnProHeader.classList.replace('to-amber-500', 'to-blue-600');
+                }
+            } else {
+                if(btnLoginGoogle) btnLoginGoogle.classList.remove('hidden');
+                if(btnBayarQris) btnBayarQris.classList.add('hidden');
+                if(btnLogout) btnLogout.classList.add('hidden'); 
+                if(btnProHeader) {
+                    btnProHeader.innerHTML = `<i class="fa-solid fa-crown"></i> PRO`;
+                    btnProHeader.classList.replace('from-blue-500', 'from-amber-400');
+                    btnProHeader.classList.replace('to-blue-600', 'to-amber-500');
+                }
+            }
         });
 
-        const data = await res.json();
+        // Tombol Login (Redirect)
+        if (btnLoginGoogle) {
+            btnLoginGoogle.addEventListener('click', () => {
+                btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Mengalihkan...';
+                auth.signInWithRedirect(provider);
+            });
+        }
 
-        if (!res.ok) throw new Error(data.error);
+        // Tombol Log Out
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async () => {
+                if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
+                    try {
+                        btnLogout.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                        await auth.signOut(); 
+                        window.location.href = "/"; 
+                    } catch (error) {
+                        alert("Gagal Log Out: " + error.message);
+                    }
+                }
+            });
+        }
 
-        // KUOTA HANYA BERKURANG JIKA SUKSES
-        sisaKuota--;
-        localStorage.setItem('kuota', sisaKuota);
-        kuotaText.innerText = `${sisaKuota} / 10`;
+        // 3. KENDALI MODAL & DAFTAR TUNGGU
+        function bukaModalPro() {
+            proModal.classList.remove('hidden');
+            setTimeout(() => { proCard.classList.replace('scale-95', 'scale-100'); }, 10);
+        }
 
-        alert(data.isBahaya ? "BAHAYA!" : "AMAN");
+        if (btnProHeader) btnProHeader.addEventListener('click', bukaModalPro);
+        if (btnClosePro) {
+            btnClosePro.addEventListener('click', () => {
+                proCard.classList.replace('scale-100', 'scale-95');
+                setTimeout(() => { proModal.classList.add('hidden'); }, 300);
+            });
+        }
 
-    } catch (err) {
-        alert("Error: " + err.message);
-    }
+        if (btnBayarQris) {
+            btnBayarQris.addEventListener('click', () => {
+                const actionArea = document.getElementById('proActionArea');
+                const userEmail = auth.currentUser ? auth.currentUser.email : "Pengguna";
+                actionArea.innerHTML = `
+                    <div class="text-center animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-200">
+                        <i class="fa-solid fa-clock-rotate-left text-4xl text-amber-500 mb-3"></i>
+                        <h4 class="font-bold text-slate-800 mb-2">Versi PRO Sedang Disiapkan!</h4>
+                        <p class="text-sm text-slate-600 mb-0">Terima kasih. Kami telah mencatat email <strong>${userEmail}</strong>.</p>
+                    </div>
+                `;
+            });
+        }
 
-    btnScan.innerText = "CEK SEKARANG";
-    btnScan.disabled = false;
-});
-</script>
+        // 4. LOGIKA UTAMA PEMINDAIAN KE BACKEND
+        if (btnScan) {
+            btnScan.addEventListener('click', async () => {
+                const teks = inputTeks.value.trim(); 
+                if (teks === "") {
+                    alert("Tolong masukkan teks atau link terlebih dahulu!");
+                    return;
+                }
+                if (sisaKuota <= 0) {
+                    bukaModalPro(); 
+                    return;
+                }
 
+                btnScan.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> MEMERIKSA DATABASE...';
+                btnScan.classList.replace('bg-blue-600', 'bg-slate-400');
+                btnScan.disabled = true;
+
+                sisaKuota--;
+                localStorage.setItem('kuotaPilihAman', sisaKuota);
+                kuotaText.innerText = `${sisaKuota} / 10`;
+
+                try {
+                    const response = await fetch('/api/scan', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ teks: teks })
+                    });
+
+                    const textResponse = await response.text();
+                    let data;
+                    
+                    try {
+                        data = JSON.parse(textResponse); 
+                    } catch (jsonError) {
+                        throw new Error("Server AI sedang sibuk. Silakan coba lagi.");
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(data.error || "Gagal memproses di server");
+                    }
+
+                    if (data.isBahaya) {
+                        resultHeader.className = "p-6 text-center bg-red-600 text-white";
+                        resultIcon.className = "fa-solid fa-triangle-exclamation text-6xl mb-4 animate-bounce";
+                        resultTitle.innerText = "BAHAYA TERDETEKSI!";
+                        resultMessage.innerHTML = `${data.pesanHasil} <br><br><span class='text-red-600 font-bold uppercase'>JANGAN DIKLIK ATAU DIBALAS!</span>`;
+                    } else {
+                        resultHeader.className = "p-6 text-center bg-green-500 text-white";
+                        resultIcon.className = "fa-solid fa-shield-check text-6xl mb-4";
+                        resultTitle.innerText = "STATUS AMAN";
+                        resultMessage.innerText = data.pesanHasil;
+                    }
+                } catch (error) {
+                    resultHeader.className = "p-6 text-center bg-slate-600 text-white";
+                    resultIcon.className = "fa-solid fa-bug text-6xl mb-4";
+                    resultTitle.innerText = "ERROR SISTEM";
+                    resultMessage.innerText = `Masalah: ${error.message}`; 
+                }
+
+                btnScan.innerHTML = '<i class="fa-solid fa-radar text-xl"></i> CEK SEKARANG';
+                btnScan.classList.replace('bg-slate-400', 'bg-blue-600');
+                btnScan.disabled = false;
+
+                resultModal.classList.remove('hidden');
+                setTimeout(() => { document.getElementById('resultCard').classList.replace('scale-95', 'scale-100'); }, 10);
+            });
+        }
+
+        // 5. TUTUP MODAL HASIL
+        if (btnCloseModal) {
+            btnCloseModal.addEventListener('click', () => {
+                document.getElementById('resultCard').classList.replace('scale-100', 'scale-95');
+                setTimeout(() => {
+                    resultModal.classList.add('hidden');
+                    inputTeks.value = ""; 
+                }, 300);
+            });
+        }
+    </script>
 </body>
 </html>
