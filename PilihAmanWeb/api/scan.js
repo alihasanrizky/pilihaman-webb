@@ -1,13 +1,9 @@
-export default async function handler(req, res) {
-    // Hanya izinkan perintah POST
+module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Metode tidak diizinkan' });
     }
 
     const { teks } = req.body;
-    
-    // Vercel akan membaca kunci rahasia ini dari dashboard mereka
-    // Kunci ini TIDAK AKAN PERNAH sampai ke browser pengguna
     const GROQ_KEY = process.env.GROQ_API_KEY;
     const GOOGLE_KEY = process.env.GOOGLE_SAFE_BROWSING_KEY;
 
@@ -50,24 +46,38 @@ export default async function handler(req, res) {
                 body: JSON.stringify({
                     model: "llama-3.1-8b-instant",
                     messages: [
-                        { role: "system", content: "Kamu pakar siber. Balas format: 'STATUS|Alasan singkat'. Jika bahaya STATUS='BAHAYA', jika aman STATUS='AMAN'." },
+                        { role: "system", content: "Kamu pakar keamanan siber. Analisis teks ini apakah mengandung penipuan/phishing. Kamu WAJIB menjawab dengan format: STATUS|Alasan. Jika bahaya, tulis BAHAYA|Alasan. Jika aman, tulis AMAN|Alasan." },
                         { role: "user", content: teks }
                     ],
-                    temperature: 0.2
+                    temperature: 0.1
                 })
             });
             
             const data = await groqResponse.json();
             const aiAnswer = data.choices[0].message.content;
+            
+            // [PERBAIKAN BUG 3] Saringan Cerdas untuk AI yang cerewet
+            const textBesar = aiAnswer.toUpperCase();
+            
+            // Memaksa deteksi kata kunci jika AI lupa format "|"
+            if (textBesar.includes("BAHAYA") || textBesar.includes("PENIPUAN") || textBesar.includes("PHISHING") || textBesar.includes("MALWARE")) {
+                isBahaya = true;
+            } else {
+                isBahaya = false;
+            }
+            
+            // Bersihkan tulisan BAHAYA/AMAN dari pesan yang akan dibaca pengguna
             const parts = aiAnswer.split('|');
-            isBahaya = parts[0].trim().toUpperCase().includes("BAHAYA");
-            pesanHasil = parts.length > 1 ? parts[1].trim() : aiAnswer;
+            if (parts.length > 1) {
+                pesanHasil = parts[1].trim();
+            } else {
+                pesanHasil = aiAnswer.replace(/BAHAYA|AMAN|STATUS:/gi, '').trim();
+            }
         }
 
-        // Kirim hasil akhir kembali ke index.html
         return res.status(200).json({ isBahaya, pesanHasil });
 
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
-}
+};
