@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
                 body: JSON.stringify({
                     model: "llama-3.1-8b-instant",
                     messages: [
-                        { role: "system", content: "Kamu pakar keamanan siber. Analisis teks ini apakah mengandung penipuan/phishing. Kamu WAJIB menjawab dengan format: STATUS|Alasan. Jika bahaya, tulis BAHAYA|Alasan. Jika aman, tulis AMAN|Alasan." },
+                        { role: "system", content: "Kamu pakar siber. WAJIB balas HANYA dengan format: STATUS|Alasan. STATUS hanya boleh diisi kata 'BAHAYA' atau 'AMAN'." },
                         { role: "user", content: teks }
                     ],
                     temperature: 0.1
@@ -56,8 +56,18 @@ module.exports = async function handler(req, res) {
             const data = await groqResponse.json();
             const aiAnswer = data.choices[0].message.content;
             
-            // [PERBAIKAN BUG 3] Saringan Cerdas untuk AI yang cerewet
-            const textBesar = aiAnswer.toUpperCase();
+            // PERBAIKAN LOGIKA: Hanya baca kata sebelum garis '|'
+            const parts = aiAnswer.split('|');
+            const status = parts[0].trim().toUpperCase();
+            
+            if (status.includes("BAHAYA")) {
+                isBahaya = true;
+            } else {
+                isBahaya = false;
+            }
+            
+            pesanHasil = parts.length > 1 ? parts[1].trim() : aiAnswer.replace(/BAHAYA|AMAN/gi, '').trim();
+        }
             
             // Memaksa deteksi kata kunci jika AI lupa format "|"
             if (textBesar.includes("BAHAYA") || textBesar.includes("PENIPUAN") || textBesar.includes("PHISHING") || textBesar.includes("MALWARE")) {
