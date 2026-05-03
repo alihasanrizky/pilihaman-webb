@@ -224,14 +224,23 @@ auth.onAuthStateChanged((user) => {
 // Aksi Tombol Login (Kembali ke metode Pop-up yang lebih stabil)
 if (btnLoginGoogle) {
     btnLoginGoogle.addEventListener('click', () => {
-        const teksAsli = btnLoginGoogle.innerHTML;
-        btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Membuka Google...';
-        
-        auth.signInWithPopup(provider).catch((error) => {
-            console.error("Gagal Login:", error);
-            alert("Terjadi kesalahan saat login: " + error.message);
-            btnLoginGoogle.innerHTML = teksAsli;
-        });
+        btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Mengalihkan...';
+        auth.signInWithRedirect(provider);
+    });
+}
+
+// Aksi Tombol Log Out (Solusi Menunggu Firebase Selesai)
+if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+        if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
+            try {
+                btnLogout.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                await auth.signOut(); // Tunggu sampai benar-benar keluar
+                window.location.href = "/"; // Muat ulang dari awal dengan bersih
+            } catch (error) {
+                alert("Gagal Log Out: " + error.message);
+            }
+        }
     });
 }
 
@@ -280,27 +289,6 @@ if (btnBayarQris) {
 // =======================================================
 if (btnScan) {
     btnScan.addEventListener('click', async () => {
-        const teks = inputTeks.value.trim(); 
-
-        if (teks === "") {
-            alert("Tolong masukkan teks atau link terlebih dahulu!");
-            return;
-        }
-
-        if (sisaKuota <= 0) {
-            bukaModalPro(); 
-            return;
-        }
-
-        btnScan.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> MEMERIKSA DATABASE...';
-        btnScan.classList.replace('bg-blue-600', 'bg-slate-400');
-        btnScan.disabled = true;
-
-        // [PERBAIKAN BUG 2] Kurangi dan Simpan Kuota ke Memori Browser
-        sisaKuota--;
-        localStorage.setItem('kuotaPilihAman', sisaKuota);
-        kuotaText.innerText = `${sisaKuota} / 10`;
-
         try {
             const response = await fetch('/api/scan', {
                 method: 'POST',
@@ -308,10 +296,22 @@ if (btnScan) {
                 body: JSON.stringify({ teks: teks })
             });
 
-            const data = await response.json();
+            // SOLUSI JSON ERROR: Ambil data sebagai teks mentah terlebih dahulu
+            const textResponse = await response.text();
+            let data;
+            
+            try {
+                data = JSON.parse(textResponse); // Coba ubah ke JSON
+            } catch (jsonError) {
+                console.error("Respon bukan JSON:", textResponse);
+                throw new Error("Server AI sedang sibuk atau mengalami gangguan teknis.");
+            }
 
-            if (!response.ok) throw new Error(data.error || "Gagal memproses di server");
+            if (!response.ok) {
+                throw new Error(data.error || "Gagal memproses di server");
+            }
 
+            // TAMPILKAN HASIL DARI SERVER KE LAYAR
             if (data.isBahaya) {
                 resultHeader.className = "p-6 text-center bg-red-600 text-white";
                 resultIcon.className = "fa-solid fa-triangle-exclamation text-6xl mb-4 animate-bounce";
@@ -323,11 +323,13 @@ if (btnScan) {
                 resultTitle.innerText = "STATUS AMAN";
                 resultMessage.innerText = data.pesanHasil;
             }
+
         } catch (error) {
+            console.error("Detail Error:", error);
             resultHeader.className = "p-6 text-center bg-slate-600 text-white";
             resultIcon.className = "fa-solid fa-bug text-6xl mb-4";
             resultTitle.innerText = "ERROR SISTEM";
-            resultMessage.innerText = `Terjadi masalah koneksi ke server. Detail: ${error.message}`; 
+            resultMessage.innerText = `Masalah: ${error.message}`; 
         }
 
         btnScan.innerHTML = '<i class="fa-solid fa-radar text-xl"></i> CEK SEKARANG';
@@ -335,8 +337,9 @@ if (btnScan) {
         btnScan.disabled = false;
 
         resultModal.classList.remove('hidden');
-        setTimeout(() => { document.getElementById('resultCard').classList.replace('scale-95', 'scale-100'); }, 10);
-    });
+        setTimeout(() => {
+            document.getElementById('resultCard').classList.replace('scale-95', 'scale-100');
+        }, 10);
 }
 
 // =======================================================
