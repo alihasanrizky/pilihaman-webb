@@ -3,188 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PilihAman - Cek Penipuan & Phishing</title>
-    
-    <!-- Memanggil Firebase Authentication -->
+    <title>PilihAman</title>
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    <!-- Memanggil Tailwind CSS -->
+
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Memanggil Ikon FontAwesome -->
+
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
 
-    <!-- Memanggil Tailwind CSS agar desain langsung cantik -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- Memanggil Firebase Authentication -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<!-- Memanggil Ikon FontAwesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<body class="bg-slate-50">
 
-<!-- Container Utama (Latar Abu-abu sangat muda) -->
-<div class="min-h-screen bg-slate-50 font-sans text-slate-800">
-  
-  <!-- Bagian Header (Navigasi Atas) -->
-  <header class="bg-white shadow-sm p-4 flex justify-between items-center">
-    <div class="flex items-center gap-2">
-      <img src="https://i.postimg.cc/4nkBT3Rq/Gemini-Generated-Image-js4re5js4re5js4r-removebg-preview.png"  class="h-12 w-auto">
-      <h1 class="text-xl font-bold text-slate-800">PilihAman</h1>
-    </div>
-    
-    <!-- Tombol Upgrade PRO (Ini yang memicu Modal Login nanti) -->
-    <button id="btnProHeader" class="bg-gradient-to-r from-amber-400 to-amber-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-md hover:scale-105 transition transform flex items-center gap-2">
-      <i class="fa-solid fa-crown"></i> PRO
-    </button>
-  </header>
+<div class="max-w-md mx-auto p-4">
 
-  <!-- Bagian Konten Utama -->
-  <main class="p-6 max-w-md mx-auto mt-4">
-    <div class="text-center mb-6">
-      <h2 class="text-2xl font-extrabold mb-2 text-slate-800">Cek Penipuan & Phishing</h2>
-      <p class="text-slate-500 text-sm">Tempel pesan mencurigakan dari WhatsApp, SMS, atau Link di bawah ini.</p>
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="font-bold text-xl">PilihAman</h1>
+        <div class="flex gap-2">
+            <button id="btnLogout" class="hidden text-red-500 text-sm">Logout</button>
+            <button id="btnProHeader" class="bg-amber-400 px-3 py-1 rounded">PRO</button>
+        </div>
     </div>
 
-    <!-- Area Kotak Input -->
-    <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100">
-      <textarea 
-        id="inputTeks"
-        class="w-full h-40 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none" 
-        placeholder="Contoh: Yth. Bapak/Ibu, silakan klik link paket ini..."></textarea>
-      
-      <!-- Indikator Kuota Gratis -->
-      <div class="flex justify-between items-center mt-3 px-1 text-xs text-slate-400 font-medium">
-        <span>Sisa Kuota Gratis Hari Ini:</span>
-        <span class="text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-md">10 / 10</span>
-      </div>
+    <!-- INPUT -->
+    <textarea id="inputTeks" class="w-full border p-3 rounded h-32"></textarea>
 
-      <!-- Tombol Eksekusi -->
-      <button 
-        id="btnScan"
-        class="w-full mt-4 bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-blue-200 shadow-lg hover:bg-blue-700 active:bg-blue-800 transition flex items-center justify-center gap-2">
-        <i class="fa-solid fa-radar text-xl animate-pulse"></i> 
+    <!-- KUOTA -->
+    <div class="text-sm mt-2">
+        Kuota: <span id="kuotaText">10 / 10</span>
+    </div>
+
+    <!-- BUTTON -->
+    <button id="btnScan" class="w-full bg-blue-600 text-white mt-4 py-3 rounded">
         CEK SEKARANG
-      </button>
-    </div>
+    </button>
 
-    <!-- Area Edukasi Singkat -->
-    <div class="mt-8 text-center text-slate-400 text-xs">
-      <p><i class="fa-solid fa-lock text-slate-300"></i> Data Anda diproses dengan aman dan anonim oleh AI.</p>
-    </div>
-  </main>
-<!-- LAYAR HASIL SCAN (Awalnya Disembunyikan) -->
-    <div id="resultModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-      <div id="resultCard" class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300">
-        
-        <!-- Header Modal Warna (Akan diubah warnanya oleh JS) -->
-        <div id="resultHeader" class="p-6 text-center bg-green-500 text-white">
-          <i id="resultIcon" class="fa-solid fa-shield-check text-6xl mb-4"></i>
-          <h3 id="resultTitle" class="text-2xl font-black uppercase tracking-wide">STATUS AMAN</h3>
-        </div>
-        
-        <!-- Body Modal Penjelasan -->
-        <div class="p-6 text-center">
-          <p id="resultMessage" class="text-slate-600 text-base mb-6">Tidak terdeteksi adanya ancaman pada teks ini.</p>
-          <button id="btnCloseModal" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition">
-            TUTUP & CEK PESAN LAINNYA
-          </button>
-        </div>
-      </div>
-    </div>
-  <!-- MODAL UPGRADE PRO (PAYWALL) -->
-    <div id="proModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm transition-opacity">
-      <div id="proCard" class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300">
-        
-        <!-- Header Modal PRO -->
-        <div class="bg-gradient-to-br from-amber-400 to-amber-600 p-6 text-center text-white relative">
-          <!-- Tombol Silang (Tutup) -->
-          <button id="btnClosePro" class="absolute top-4 right-4 text-white/80 hover:text-white transition">
-            <i class="fa-solid fa-xmark text-2xl"></i>
-          </button>
-          
-          <i class="fa-solid fa-crown text-5xl mb-3 shadow-sm rounded-full bg-white/20 p-4 inline-block"></i>
-          <h3 class="text-2xl font-black uppercase tracking-wide">PilihAman PRO</h3>
-          <p class="text-amber-50 text-sm mt-1 font-medium">Keamanan Siber Tanpa Batas</p>
-        </div>
-        
-        <!-- Body Modal Penawaran -->
-        <div class="p-6">
-          <div class="text-center mb-6">
-            <span class="text-5xl font-black text-slate-800">Rp 10<span class="text-3xl">rb</span></span>
-            <span class="text-slate-500 font-medium">/bulan</span>
-          </div>
-          
-          <!-- Daftar Keuntungan -->
-          <ul class="space-y-3 mb-8 text-sm text-slate-700 font-medium border-t border-b border-slate-100 py-4">
-            <li class="flex items-center gap-3"><i class="fa-solid fa-check-circle text-green-500 text-xl"></i> Cek Teks & Link Sepuasnya</li>
-            <li class="flex items-center gap-3"><i class="fa-solid fa-check-circle text-green-500 text-xl"></i> Deteksi File APK Berbahaya</li>
-            <li class="flex items-center gap-3"><i class="fa-solid fa-check-circle text-green-500 text-xl"></i> Bebas Iklan Selamanya</li>
-          </ul>
-          
-          <!-- Tombol Pembayaran QRIS -->
-          <!-- AREA TOMBOL AKSI MODAL PRO -->
-          <div id="proActionArea">
-            <!-- Tombol ini muncul jika BELUM login -->
-            <button id="btnLoginGoogle" class="w-full bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-50 transition flex items-center justify-center gap-3 shadow-sm mb-3">
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6" alt="Google">
-              LOGIN GOOGLE UNTUK UPGRADE
-            </button>
-            
-            <!-- Tombol ini muncul jika SUDAH login (Awalnya disembunyikan pakai 'hidden') -->
-            <button id="btnBayarQris" class="hidden w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-slate-300">
-              <i class="fa-solid fa-qrcode text-xl text-amber-400"></i> BAYAR PAKAI QRIS
-            </button>
-          </div>
-          
-          <p class="text-center text-xs text-slate-400 mt-4"><i class="fa-solid fa-bolt text-amber-500"></i> Aktivasi instan 5 detik setelah bayar.</p>
-        </div>
-      </div>
-    </div>
 </div>
 
-    <script>
-// =======================================================
-// 1. MENGAMBIL ELEMEN DARI HTML
-// =======================================================
+<script>
+// ============================
+// INIT
+// ============================
 const btnScan = document.getElementById('btnScan');
 const inputTeks = document.getElementById('inputTeks');
-const resultModal = document.getElementById('resultModal');
-const btnCloseModal = document.getElementById('btnCloseModal');
-const resultHeader = document.getElementById('resultHeader');
-const resultIcon = document.getElementById('resultIcon');
-const resultTitle = document.getElementById('resultTitle');
-const resultMessage = document.getElementById('resultMessage');
-const kuotaText = document.querySelector('.text-blue-600.font-bold');
+const kuotaText = document.getElementById('kuotaText');
+const btnLogout = document.getElementById('btnLogout');
 
-// ELEMEN MODAL PRO & LOGIN
-const btnProHeader = document.getElementById('btnProHeader');
-const proModal = document.getElementById('proModal');
-const btnClosePro = document.getElementById('btnClosePro');
-const proCard = document.getElementById('proCard');
-const btnLoginGoogle = document.getElementById('btnLoginGoogle');
-const btnBayarQris = document.getElementById('btnBayarQris');
-const btnLogout = document.getElementById('btnLogout'); 
+// ============================
+// KUOTA SYSTEM
+// ============================
+let sisaKuota = parseInt(localStorage.getItem('kuota') || "10");
+kuotaText.innerText = `${sisaKuota} / 10`;
 
-// =======================================================
-// 2. VARIABEL SISTEM (LOCAL STORAGE)
-// =======================================================
-// Mengambil ingatan sisa kuota, default 10 jika belum pernah scan
-let sisaKuota = localStorage.getItem('kuotaPilihAman');
-if (sisaKuota === null) {
-    sisaKuota = 10;
-} else {
-    sisaKuota = parseInt(sisaKuota);
-}
-// Tampilkan ke layar saat halaman pertama kali dimuat
-if (kuotaText) kuotaText.innerText = `${sisaKuota} / 10`;
-
-// =======================================================
-// 3. INISIALISASI FIREBASE & SISTEM LOGIN
-// =======================================================
-// --- PASTE FIREBASE CONFIG ANDA DI SINI ---
+// ============================
+// FIREBASE
+// ============================
 const firebaseConfig = {
-   apiKey: "AIzaSyDWJMeI-74WX5-pzjXh64No9MCg_8W1PFQ",
+  apiKey: "AIzaSyDWJMeI-74WX5-pzjXh64No9MCg_8W1PFQ",
   authDomain: "pilihaman-31d79.firebaseapp.com",
   projectId: "pilihaman-31d79",
   storageBucket: "pilihaman-31d79.firebasestorage.app",
@@ -196,178 +75,67 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-// Pemantau Status Login (Berjalan otomatis)
+// LOGIN STATE
 auth.onAuthStateChanged((user) => {
     if (user) {
-        if(btnLoginGoogle) btnLoginGoogle.classList.add('hidden');
-        if(btnBayarQris) btnBayarQris.classList.remove('hidden');
-        if(btnLogout) btnLogout.classList.remove('hidden'); 
-        if(btnProHeader) {
-            const namaDepan = user.displayName.split(' ')[0];
-            btnProHeader.innerHTML = `<img src="${user.photoURL}" class="w-6 h-6 rounded-full border border-white/50 shadow-sm"> Hai, ${namaDepan}`;
-            btnProHeader.classList.replace('from-amber-400', 'from-blue-500');
-            btnProHeader.classList.replace('to-amber-500', 'to-blue-600');
-        }
+        btnLogout.classList.remove('hidden');
     } else {
-        if(btnLoginGoogle) btnLoginGoogle.classList.remove('hidden');
-        if(btnBayarQris) btnBayarQris.classList.add('hidden');
-        if(btnLogout) btnLogout.classList.add('hidden'); 
-        if(btnProHeader) {
-            btnProHeader.innerHTML = `<i class="fa-solid fa-crown"></i> PRO`;
-            btnProHeader.classList.replace('from-blue-500', 'from-amber-400');
-            btnProHeader.classList.replace('to-blue-600', 'to-amber-500');
-        }
+        btnLogout.classList.add('hidden');
     }
 });
 
-// Aksi Tombol Login (Mode Redirect Anti-Blokir Browser)
-if (btnLoginGoogle) {
-    btnLoginGoogle.addEventListener('click', () => {
-        btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Mengalihkan...';
-        auth.signInWithRedirect(provider);
-    });
-}
+// LOGOUT
+btnLogout.onclick = async () => {
+    await auth.signOut();
+    location.reload();
+};
 
-// Aksi Tombol Log Out (Mode Tunggu / Async)
-if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-        if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
-            try {
-                btnLogout.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                await auth.signOut(); // Tunggu sampai koneksi Firebase benar-benar putus
-                window.location.href = "/"; // Muat ulang ke beranda dalam kondisi bersih
-            } catch (error) {
-                alert("Gagal Log Out: " + error.message);
-            }
-        }
-    });
-}
+// ============================
+// SCAN LOGIC
+// ============================
+btnScan.addEventListener('click', async () => {
 
-// =======================================================
-// 4. KENDALI MODAL PRO (DAFTAR TUNGGU)
-// =======================================================
-function bukaModalPro() {
-    proModal.classList.remove('hidden');
-    setTimeout(() => { proCard.classList.replace('scale-95', 'scale-100'); }, 10);
-}
+    const teks = inputTeks.value.trim();
 
-if (btnProHeader) btnProHeader.addEventListener('click', bukaModalPro);
-if (btnClosePro) {
-    btnClosePro.addEventListener('click', () => {
-        proCard.classList.replace('scale-100', 'scale-95');
-        setTimeout(() => { proModal.classList.add('hidden'); }, 300);
-    });
-}
+    if (!teks) {
+        alert("Isi dulu!");
+        return;
+    }
 
-if (btnBayarQris) {
-    btnBayarQris.innerHTML = '<i class="fa-solid fa-envelope-open-text text-xl text-amber-400"></i> GABUNG DAFTAR TUNGGU PRO';
-    btnBayarQris.addEventListener('click', () => {
-        const actionArea = document.getElementById('proActionArea');
-        const userEmail = auth.currentUser ? auth.currentUser.email : "Pengguna";
-        actionArea.innerHTML = `
-            <div class="text-center animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-200">
-                <i class="fa-solid fa-clock-rotate-left text-4xl text-amber-500 mb-3"></i>
-                <h4 class="font-bold text-slate-800 mb-2">Versi PRO Sedang Disiapkan!</h4>
-                <p class="text-sm text-slate-600 mb-0">Terima kasih. Kami telah mencatat email <strong>${userEmail}</strong>.</p>
-            </div>
-        `;
-    });
-}
+    if (sisaKuota <= 0) {
+        alert("Kuota habis!");
+        return;
+    }
 
-// =======================================================
-// 5. LOGIKA UTAMA PEMINDAIAN (TERHUBUNG KE SERVER VERCEL)
-// =======================================================
-if (btnScan) {
-    btnScan.addEventListener('click', async () => {
-        const teks = inputTeks.value.trim(); 
+    btnScan.innerText = "Loading...";
+    btnScan.disabled = true;
 
-        if (teks === "") {
-            alert("Tolong masukkan teks atau link terlebih dahulu!");
-            return;
-        }
+    try {
+        const res = await fetch('/api/scan', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ teks })
+        });
 
-        if (sisaKuota <= 0) {
-            bukaModalPro(); 
-            return;
-        }
+        const data = await res.json();
 
-        btnScan.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> MEMERIKSA DATABASE...';
-        btnScan.classList.replace('bg-blue-600', 'bg-slate-400');
-        btnScan.disabled = true;
+        if (!res.ok) throw new Error(data.error);
 
-        // Kurangi dan Simpan Kuota ke Memori Browser
+        // KUOTA HANYA BERKURANG JIKA SUKSES
         sisaKuota--;
-        localStorage.setItem('kuotaPilihAman', sisaKuota);
+        localStorage.setItem('kuota', sisaKuota);
         kuotaText.innerText = `${sisaKuota} / 10`;
 
-        try {
-            const response = await fetch('/api/scan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ teks: teks })
-            });
+        alert(data.isBahaya ? "BAHAYA!" : "AMAN");
 
-            // Pengereman Anti-Tersedak (Validasi JSON)
-            const textResponse = await response.text();
-            let data;
-            
-            try {
-                data = JSON.parse(textResponse); 
-            } catch (jsonError) {
-                console.error("Respon bukan JSON:", textResponse);
-                throw new Error("Server AI sedang sibuk atau mengalami gangguan teknis.");
-            }
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
 
-            if (!response.ok) {
-                throw new Error(data.error || "Gagal memproses di server");
-            }
+    btnScan.innerText = "CEK SEKARANG";
+    btnScan.disabled = false;
+});
+</script>
 
-            // TAMPILKAN HASIL DARI SERVER KE LAYAR
-            if (data.isBahaya) {
-                resultHeader.className = "p-6 text-center bg-red-600 text-white";
-                resultIcon.className = "fa-solid fa-triangle-exclamation text-6xl mb-4 animate-bounce";
-                resultTitle.innerText = "BAHAYA TERDETEKSI!";
-                resultMessage.innerHTML = `${data.pesanHasil} <br><br><span class='text-red-600 font-bold uppercase'>JANGAN DIKLIK ATAU DIBALAS!</span>`;
-            } else {
-                resultHeader.className = "p-6 text-center bg-green-500 text-white";
-                resultIcon.className = "fa-solid fa-shield-check text-6xl mb-4";
-                resultTitle.innerText = "STATUS AMAN";
-                resultMessage.innerText = data.pesanHasil;
-            }
-
-        } catch (error) {
-            console.error("Detail Error:", error);
-            resultHeader.className = "p-6 text-center bg-slate-600 text-white";
-            resultIcon.className = "fa-solid fa-bug text-6xl mb-4";
-            resultTitle.innerText = "ERROR SISTEM";
-            resultMessage.innerText = `Masalah: ${error.message}`; 
-        }
-
-        // Kembalikan Tombol ke Semula
-        btnScan.innerHTML = '<i class="fa-solid fa-radar text-xl"></i> CEK SEKARANG';
-        btnScan.classList.replace('bg-slate-400', 'bg-blue-600');
-        btnScan.disabled = false;
-
-        // Buka Pop-up Hasil
-        resultModal.classList.remove('hidden');
-        setTimeout(() => {
-            document.getElementById('resultCard').classList.replace('scale-95', 'scale-100');
-        }, 10);
-    });
-}
-
-// =======================================================
-// 6. MENUTUP MODAL HASIL SCAN
-// =======================================================
-if (btnCloseModal) {
-    btnCloseModal.addEventListener('click', () => {
-        document.getElementById('resultCard').classList.replace('scale-100', 'scale-95');
-        setTimeout(() => {
-            resultModal.classList.add('hidden');
-            inputTeks.value = ""; 
-        }, 300);
-    });
-}
-    </script>
 </body>
 </html>
