@@ -221,17 +221,19 @@ auth.onAuthStateChanged((user) => {
 });
 
 // [PERBAIKAN BUG 1] Aksi Tombol Login Menggunakan REDIRECT (Bukan Pop-Up)
+// Aksi Tombol Login (Kembali ke metode Pop-up yang lebih stabil)
 if (btnLoginGoogle) {
     btnLoginGoogle.addEventListener('click', () => {
-        btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Mengalihkan...';
-        auth.signInWithRedirect(provider);
+        const teksAsli = btnLoginGoogle.innerHTML;
+        btnLoginGoogle.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> Membuka Google...';
+        
+        auth.signInWithPopup(provider).catch((error) => {
+            console.error("Gagal Login:", error);
+            alert("Terjadi kesalahan saat login: " + error.message);
+            btnLoginGoogle.innerHTML = teksAsli;
+        });
     });
 }
-
-// Menangkap error jika Redirect gagal
-auth.getRedirectResult().catch((error) => {
-    alert("Gagal login dengan Google: " + error.message);
-});
 
 // Aksi Tombol Log Out
 if (btnLogout) {
